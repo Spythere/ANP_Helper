@@ -1,0 +1,38 @@
+﻿<Window x:Class="ANP_Helper.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ANP_Helper"
+        mc:Ignorable="d"
+        Title="ANP Helper" Height="584" Width="800" Background="#FF313232">
+    <Grid Cursor="Arrow">
+        <TextBlock HorizontalAlignment="Center" Margin="0,22,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="48" FontWeight="Bold" Width="312" Text="ANP HELPER" TextAlignment="Center" Foreground="Salmon" TextDecorations="{x:Null}"/>
+        <DataGrid x:Name="DataGridXAML" Background="#FF4B4B4B" BorderBrush="Transparent" Margin="40,161,40,73" ColumnHeaderHeight="30" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" ItemsSource="{Binding}"  HeadersVisibility="Column" FontSize="14" SelectionChanged="DataGridXAML_SelectionChanged_1">
+
+            <DataGrid.Resources>
+                <Style TargetType="{x:Type DataGridColumnHeader}">
+                    <Setter Property="Foreground" Value="Black"></Setter>
+                    <Setter Property="Background" Value="#FFF96251"></Setter>
+                    <Setter Property="FontWeight" Value="Bold"></Setter>
+                    <Setter Property="BorderBrush" Value="White"></Setter>
+                    <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+                    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+                    <Setter Property="ScrollViewer.CanContentScroll" Value="true" />
+                </Style>
+            </DataGrid.Resources>
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="NR ROZKŁADU" Width="*" Binding="{Binding timetableId}" IsReadOnly="True" Foreground="Red"/>
+                <DataGridTextColumn Header="MASZYNISTA" Width="*" Binding="{Binding driverName}" IsReadOnly="True"></DataGridTextColumn>
+                <DataGridTextColumn Header="NR POCIĄGU" Width="*" Binding="{Binding trainNo}" IsReadOnly="True" ></DataGridTextColumn>
+            </DataGrid.Columns>
+
+
+        </DataGrid>
+
+        <Rectangle x:Name="statusIndicatorXAML" HorizontalAlignment="Left" Width="15" Height="15" Fill="Red" Margin="40,141,0,0" VerticalAlignment="Top" />
+        <TextBlock x:Name="statusTextXAML" HorizontalAlignment="Left" Margin="60,140,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="Red" Text="DRZEWKO OFFLINE" FontWeight="Bold"/>
+
+    </Grid>
+</Window>
