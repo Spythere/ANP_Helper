@@ -23,9 +23,8 @@
             </DataGrid.Resources>
 
             <DataGrid.Columns>
-                <DataGridTextColumn Header="NR ROZKŁADU" Width="*" Binding="{Binding timetableId}" IsReadOnly="True" Foreground="Red"/>
-                <DataGridTextColumn Header="MASZYNISTA" Width="*" Binding="{Binding driverName}" IsReadOnly="True"></DataGridTextColumn>
-                <DataGridTextColumn Header="NR POCIĄGU" Width="*" Binding="{Binding trainNo}" IsReadOnly="True" ></DataGridTextColumn>
+                <DataGridTextColumn Header="RODZAJ PRZEBIEGU" Width="200" Binding="{Binding definitionType}" IsReadOnly="True" Foreground="Red"/>
+                <DataGridTextColumn Header="NIEODPRAWIONE NUMERY POCIĄGÓW" Width="*" Binding="{Binding trainNumbers}" IsReadOnly="True"></DataGridTextColumn>
             </DataGrid.Columns>
 
 
@@ -33,6 +32,8 @@
 
         <Rectangle x:Name="statusIndicatorXAML" HorizontalAlignment="Left" Width="15" Height="15" Fill="Red" Margin="40,141,0,0" VerticalAlignment="Top" />
         <TextBlock x:Name="statusTextXAML" HorizontalAlignment="Left" Margin="60,140,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="Red" Text="DRZEWKO OFFLINE" FontWeight="Bold"/>
+
+        <Button Content="Wybierz plik ANP" Click="Button_Click" HorizontalAlignment="Left" Margin="40,0,0,21" Width="120" FontWeight="Bold" Height="30" VerticalAlignment="Bottom"/>
 
     </Grid>
 </Window>

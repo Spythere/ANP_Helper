@@ -15,20 +15,21 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Timers;
 using System.Windows.Threading;
+using Microsoft.Win32;
 
 namespace ANP_Helper
 {
     public class TimetableColumn
     {
-        public int timetableId { get; set; }
-        public int trainNo { get; set; }
-        public string driverName { get; set; }
+        public string definitionType { get; set; }
+        public string trainNumbers { get; set; }
     }
 
     public partial class MainWindow : Window
     {
         readonly DataManager dm;
-        string chosenScenery = "Piaskowo";
+        readonly string chosenScenery = "Otwocko";
+        private string chosenFilePath = "";
 
         public MainWindow()
         {
@@ -36,17 +37,7 @@ namespace ANP_Helper
             statusTextXAML.Text = $"{chosenScenery.ToUpper()} OFFLINE!";
 
 
-            dm = new DataManager(chosenScenery);
-
-            DispatcherTimer timer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(10)
-            };
-
-            timer.Tick += timerTick;
-            timer.Start();
-
-            getSceneryData();
+            dm = new DataManager(chosenScenery);        
         }
 
         private void timerTick(object sender, EventArgs e)
@@ -66,18 +57,37 @@ namespace ANP_Helper
             statusTextXAML.Text = $"{chosenScenery.ToUpper()} ONLINE!";
             statusTextXAML.Foreground = Brushes.LightGreen;
 
-            List<SceneryTimetable> timetables = await dm.fetchTimetableData();
+            List<AnpEntry> anpEntries = await dm.fetchANPData();
+
+
+            Dictionary<string, List<int>> dict = new Dictionary<string, List<int>>();
+            foreach (AnpEntry entry in anpEntries)
+            {
+                if (!dict.ContainsKey(entry.definitionType))
+                    dict[entry.definitionType] = new List<int>();
+
+                dict[entry.definitionType].Add(entry.trainNo);
+            }
 
             List<TimetableColumn> columns = new List<TimetableColumn>();
-
-            foreach (SceneryTimetable timetable in timetables)
+            
+            foreach (string definitionTypeKey in dict.Keys)
             {
-                columns.Add(new TimetableColumn
+                columns.Add(new TimetableColumn()
                 {
-                    timetableId = timetable.trainInfo.timetableId,
-                    trainNo = timetable.trainInfo.trainNo,
-                    driverName = timetable.trainInfo.driverName
+                    definitionType = definitionTypeKey,
+                    trainNumbers = string.Join(",", dict[definitionTypeKey].Select(x => x.ToString()).ToArray())
                 });
+
+                /* columns.Add(new TimetableColumn
+                 {
+                     timetableId = timetable.trainInfo.timetableId,
+                     trainNo = timetable.trainInfo.trainNo,
+                     driverName = timetable.trainInfo.driverName,
+                     directivesString = directivesString
+                 });*/
+
+                Trace.WriteLine(definitionTypeKey);
             }
 
             DataGridXAML.ItemsSource = columns;
@@ -95,6 +105,32 @@ namespace ANP_Helper
 
         private void DataGridXAML_SelectionChanged_1(object sender, SelectionChangedEventArgs e)
         {
+
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            /*chosenFilePath = FileManager.openANPFile();
+
+            if (chosenFilePath == null)
+                return;*/
+
+           /* trajectoryDict = FileManager.readTrajectories(chosenFilePath);
+
+            foreach (Trajectory t in trajectoryDict.Values)
+            {
+                Trace.WriteLine(t.name);
+            }*/
+
+            DispatcherTimer timer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(10)
+            };
+
+            timer.Tick += timerTick;
+            timer.Start();
+
+            getSceneryData();
 
         }
     }

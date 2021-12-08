@@ -8,118 +8,38 @@ using System.Diagnostics;
 namespace ANP_Helper
 
 {
-     public class StationOnline
-    {
-        public int dispatcherId { get; set; }
-        public string dispatcherName { get; set; }
-        public bool dispatcherIsSupporter { get; set; }
-        public string stationName { get; set; }
-        public string stationHash { get; set; }
-        public string region { get; set; }
-        public int maxUsers { get; set; }
-        public int currentUsers { get; set; }
-        public int spawn { get; set; }
-        public object lastSeen { get; set; }
-        public int dispatcherExp { get; set; }
-        public string nameFromHeader { get; set; }
-        public string spawnString { get; set; }
-        public string networkConnectionString { get; set; }
-        public int isOnline { get; set; }
-        public int dispatcherRate { get; set; }
-    }
-
-    public class StationAPIResponse
-    {
-        public bool success { get; set; }
-        public int respCode { get; set; }
-        public List<StationOnline> message { get; set; }
-    }
-    class TrainAPIResponse
-    {
-        public bool success { get; set; }
-        public int respCode { get; set; }
-        public List<TrainOnline> message { get; set; }
-    }
-
-    class TrainInfo
-    {
-        public int timetableId { get; set; }
-        public int trainNo { get; set; }
-        public string trainCategoryCode { get; set; }
-        public int driverId { get; set; }
-        public string driverName { get; set; }
-        public string route { get; set; }
-        public int twr { get; set; }
-        public int skr { get; set; }
-        public List<string> sceneries { get; set; }
-    }
-
-    class StopPoint
-    {
-        public string arrivalLine { get; set; }
-        public DateTime? arrivalTime { get; set; }
-        public int arrivalDelay { get; set; }
-        public DateTime? arrivalRealTime { get; set; }
-        public double pointDistance { get; set; }
-        public string pointName { get; set; }
-        public string pointNameRAW { get; set; }
-        public int entryId { get; set; }
-        public string pointId { get; set; }
-        public object comments { get; set; }
-        public int confirmed { get; set; }
-        public int isStopped { get; set; }
-        public int? pointStopTime { get; set; }
-        public string pointStopType { get; set; }
-        public string departureLine { get; set; }
-        public DateTime? departureTime { get; set; }
-        public int departureDelay { get; set; }
-        public DateTime? departureRealTime { get; set; }
-    }
-
-    class Message
-    {
-        public TrainInfo? trainInfo { get; set; }
-        public List<StopPoint>? stopPoints { get; set; }
-    }
-
-    class TimetableAPIResponse
-    {
-        public bool success { get; set; }
-        public int respCode { get; set; }
-        public Message? message { get; set; }
-    }
-
-    class TrainOnline
-    {
-        public int trainNo { get; set; }
-        public int driverId { get; set; }
-        public string driverName { get; set; }
-
-        public string region { get; set; }
-    }
-
-    class Timetable
-    {
-        public TrainInfo trainInfo { get; set; }
-        public List<StopPoint> stopPoints { get; set; }
-    }
-
-    class SceneryTimetable
-    {
-        public TrainInfo trainInfo { get; set; }
-    
-        public StopPoint sceneryStopPoint { get; set; }
-    }
-
     class DataManager
     {
+        readonly Dictionary<string, string> definitions;
+        
         readonly HttpClient client = new HttpClient();
         readonly string chosenScenery = "drzewko";
-
+        readonly string region = "eu";
 
         public DataManager(string chosenScenery)
         {
             this.chosenScenery = chosenScenery;
+
+            definitions = new Dictionary<string, string>
+            {
+                { "Wjazd_PnP_Pas_postoj", "Wjazd z PnP: tory 1/3" },
+                { "Wjazd_KB_Pas_postoj", "Wjazd z KB: tory 2/3" },
+                
+                { "Wjazd_PnP_Tow_postoj", "Wjazd z PnP: tory 4/6" },
+                { "Wjazd_KB_Tow_postoj", "Wjazd z KB: tory 4/6" },
+
+                { "Wjazd_PnP_Pas_koniec", "Wjazd z PnP: tor 3" },
+                { "Wjazd_PnP_Tow_koniec", "Wjazd z PnP: tory 4/6" },
+
+                { "Wjazd_PnP_bok", "Wjazd z PnP: tor 4/6/2/3" },
+                { "Wjazd_KB_bok", "Wjazd z KB: tory 4/6/1/3" },
+
+                { "Przelot_KB", "Przelot na KB: tor 1" },
+                { "Przelot_PnP", "Przelot na PnP: tor 2" },
+
+                { "Wyjazd_KB", "Wyjazd na KB: wszystkie tory" },
+                { "Wyjazd_PnP", "Wyjazd na PnP: wszystkie tory" },
+            };
         }
 
         public async Task<bool> isChosenSceneryOnline()
@@ -131,8 +51,10 @@ namespace ANP_Helper
             return onlineStations.Find(station => station.nameFromHeader.ToLower().Equals(chosenScenery.ToLower())) != null;
         }
 
-        public async Task<List<SceneryTimetable>> fetchTimetableData()
+        public async Task<List<AnpEntry>> fetchANPData()
         {
+            List<AnpEntry> anpEntries = new List<AnpEntry>();
+
             Trace.WriteLine("Ładowanie danych...");
             string responseString = await client.GetStringAsync("https://api.td2.info.pl:9640/?method=getTrainsOnline");
 
@@ -144,10 +66,10 @@ namespace ANP_Helper
 
             Parallel.ForEach(onlineTrains, train =>
             {
-                if (train.region != "eu")
+                if (train.region != region)
                     return;
 
-                Task<TimetableAPIResponse> task = getTimetableData(client, $"https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable%3B{train.trainNo}%3Beu");
+                Task<TimetableAPIResponse> task = getTimetableData(client, $"https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable%3B{train.trainNo}%3B{region}");
 
                 tasks.Add(task);
             });
@@ -156,7 +78,6 @@ namespace ANP_Helper
 
             Trace.WriteLine("Załadowano!");
 
-            List<SceneryTimetable> sceneryTimetables = new List<SceneryTimetable>();
 
             foreach (TimetableAPIResponse res in ttResponse)
             {
@@ -167,22 +88,69 @@ namespace ANP_Helper
                     continue;
 
 
+                TrainInfo trainInfo = res.message.trainInfo;
                 StopPoint sceneryStopPoint = res.message.stopPoints.Find(stop => stop.pointNameRAW.ToLower().Equals(chosenScenery.ToLower()));
-
 
                 if (sceneryStopPoint == null)
                     continue;
 
-                sceneryTimetables.Add(new SceneryTimetable
-                {
-                    trainInfo = res.message.trainInfo,
-                    sceneryStopPoint = sceneryStopPoint
-                });
+                if (sceneryStopPoint.confirmed == 1)
+                    continue;
+
+                anpEntries.Add(updateAnpEntry(trainInfo, sceneryStopPoint));
             }
 
-            sceneryTimetables.Sort((a, b) => a.trainInfo.timetableId > b.trainInfo.timetableId ? 1 : -1);
 
-            return sceneryTimetables;
+            return anpEntries;
+        }
+
+        private AnpEntry updateAnpEntry(TrainInfo trainInfo, StopPoint stopPoint)
+        {
+            string arrivalLine = stopPoint.arrivalLine;
+            string departureLine = stopPoint.departureLine;
+
+            string trainType = trainInfo.trainNo.ToString().Length == 5 || trainInfo.trainNo.ToString().Length == 4 ? "Pas" : "Tow";
+
+            AnpEntry anpEntry = new AnpEntry()
+            {
+                trainNo = trainInfo.trainNo,
+                trainType = trainType,
+                delay = 0d,
+                arrivalLine = arrivalLine,
+                departureLine = departureLine
+
+            };
+            // Początek
+            if (stopPoint.pointStopTime == null && arrivalLine == null)
+            {
+                // Wyjazd_{departureLine}
+                anpEntry.definitionType = DefinitionType.DEF_EXIT;    
+            } 
+
+            // Koniec
+            if (stopPoint.pointStopTime == null && departureLine == null)
+            {
+                // Wjazd_{arrivalLine}_{trainType}_koniec
+                anpEntry.definitionType = DefinitionType.DEF_ENTRY_END;
+            }
+
+            // Przelot
+            if (stopPoint.pointStopTime != null && stopPoint.pointStopTime == 0)
+            {
+                // Przelot_{departureLine} Wjazd_bok_{arrivalLine} Wyjazd_{departureLine} Wjazd_postoj_{arrivalLine}_{trainType}
+                anpEntry.definitionType = DefinitionType.DEF_NOSTOP;
+                anpEntry.activationTime = stopPoint.departureTime;
+            }
+
+            // Postój
+            if (stopPoint.pointStopTime != null && stopPoint.pointStopTime != 0)
+            {
+                // Wjazd_koniec_{arrivalLine}_{trainType} Wyjazd_{departureLine}
+                anpEntry.definitionType = DefinitionType.DEF_STOP;
+                anpEntry.activationTime = stopPoint.departureTime;
+            }
+
+            return anpEntry;
         }
 
 
