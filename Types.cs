@@ -104,8 +104,8 @@ namespace ANP_Helper
     public static class DefinitionType
     {
         public const string
-            DEF_STOP = "Wjazd z postojem",
-            DEF_ENTRY_ASIDE = "Wjazd na bok",
+            DEF_STOP = "Postój",
+            DEF_ENTRY_ASIDE = "Wjazd (bok)",
             DEF_ENTRY_END = "Wjazd (koniec)",
 
             DEF_EXIT = "Wyjazd",

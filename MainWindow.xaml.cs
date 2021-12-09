@@ -2,20 +2,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Timers;
-using System.Windows.Threading;
-using Microsoft.Win32;
+using System.IO;
 
 namespace ANP_Helper
 {
@@ -28,8 +19,10 @@ namespace ANP_Helper
     public partial class MainWindow : Window
     {
         readonly DataManager dm;
-        readonly string chosenScenery = "Otwocko";
+        readonly string chosenScenery = "Drzewko";
         private string chosenFilePath = "";
+
+        List<AnpEntry> anpEntries;
 
         public MainWindow()
         {
@@ -40,27 +33,48 @@ namespace ANP_Helper
             dm = new DataManager(chosenScenery);        
         }
 
-        private void timerTick(object sender, EventArgs e)
+        private async void refreshData()
         {
-            getSceneryData();
+            await getSceneryData();
+
+            if (anpEntries != null)
+            {
+                List<string> lines = new List<string>();
+
+                foreach (string line in File.ReadLines(@chosenFilePath))
+                {
+                    lines.Add(line);
+
+                    if (line.Contains("###"))
+                        break;
+                }
+
+
+                foreach (AnpEntry anpEntry in anpEntries)
+                {
+                    lines.Add($"przebieg {anpEntry.trainNo} - - {anpEntry.delay} {anpEntry.definitionType}");
+                }
+
+                await File.WriteAllLinesAsync(@chosenFilePath, lines);
+
+                renderXAML();
+            }
         }
 
-        public async void getSceneryData()
+        private void timerTick(object sender, EventArgs e)
         {
-            bool isSceneryOnline = await dm.isChosenSceneryOnline();
+            refreshData();
+        }
 
-            if(!isSceneryOnline)
-                return;
-
+        public void renderXAML()
+        {
             statusIndicatorXAML.Fill = Brushes.LightGreen;
 
             statusTextXAML.Text = $"{chosenScenery.ToUpper()} ONLINE!";
             statusTextXAML.Foreground = Brushes.LightGreen;
 
-            List<AnpEntry> anpEntries = await dm.fetchANPData();
-
-
             Dictionary<string, List<int>> dict = new Dictionary<string, List<int>>();
+
             foreach (AnpEntry entry in anpEntries)
             {
                 if (!dict.ContainsKey(entry.definitionType))
@@ -70,27 +84,37 @@ namespace ANP_Helper
             }
 
             List<TimetableColumn> columns = new List<TimetableColumn>();
-            
+
             foreach (string definitionTypeKey in dict.Keys)
             {
+                dict[definitionTypeKey].Sort((a, b) => a > b ? 1 : -1);
+
                 columns.Add(new TimetableColumn()
                 {
                     definitionType = definitionTypeKey,
-                    trainNumbers = string.Join(",", dict[definitionTypeKey].Select(x => x.ToString()).ToArray())
+                    trainNumbers = string.Join(", ", dict[definitionTypeKey].Select(x => x.ToString()).ToArray())
                 });
-
-                /* columns.Add(new TimetableColumn
-                 {
-                     timetableId = timetable.trainInfo.timetableId,
-                     trainNo = timetable.trainInfo.trainNo,
-                     driverName = timetable.trainInfo.driverName,
-                     directivesString = directivesString
-                 });*/
 
                 Trace.WriteLine(definitionTypeKey);
             }
 
+            columns.Sort((col1, col2) => col1.definitionType[0] > col2.definitionType[0] ? 1 : -1);
+
             DataGridXAML.ItemsSource = columns;
+        }
+
+        public async Task getSceneryData()
+        {
+            bool isSceneryOnline = await dm.isChosenSceneryOnline();
+
+            if (!isSceneryOnline)
+            {
+                anpEntries = null;
+                return;
+            }
+
+            anpEntries = await dm.fetchANPData();
+
         }
 
         private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -108,30 +132,24 @@ namespace ANP_Helper
 
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            /*chosenFilePath = FileManager.openANPFile();
+            chosenFilePath = FileManager.getANPFilePath();
 
             if (chosenFilePath == null)
-                return;*/
+                return;
 
-           /* trajectoryDict = FileManager.readTrajectories(chosenFilePath);
 
-            foreach (Trajectory t in trajectoryDict.Values)
-            {
-                Trace.WriteLine(t.name);
-            }*/
 
-            DispatcherTimer timer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(10)
-            };
+            /*  DispatcherTimer timer = new DispatcherTimer
+              {
+                  Interval = TimeSpan.FromSeconds(10)
+              };
 
-            timer.Tick += timerTick;
-            timer.Start();
+              timer.Tick += timerTick;
+              timer.Start();*/
 
-            getSceneryData();
-
+            refreshData();
         }
     }
 }

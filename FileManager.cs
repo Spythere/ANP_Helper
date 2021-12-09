@@ -11,7 +11,7 @@ namespace ANP_Helper
     {
 
 
-        public static string openANPFile()
+        public static string getANPFilePath()
         {
             OpenFileDialog fileDialog = new OpenFileDialog();
 

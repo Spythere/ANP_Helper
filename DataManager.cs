@@ -78,7 +78,6 @@ namespace ANP_Helper
 
             Trace.WriteLine("Załadowano!");
 
-
             foreach (TimetableAPIResponse res in ttResponse)
             {
                 if (res == null)
